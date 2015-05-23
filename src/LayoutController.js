@@ -22,12 +22,8 @@ function LayoutController(options) {
 	Node.call(this);
 
 	this._comp = this.addComponent({
-		onUpdate: function() {
-			_layout.call(this);
-		}.bind(this),
-		onSizeChange: function(size) {
-			_layout.call(this);
-		}.bind(this)
+		onUpdate: _layout.bind(this),
+		onSizeChange: _layout.bind(this)
 	});
 	this.options = {};
 	this.setOptions(options || {});
@@ -36,8 +32,8 @@ LayoutController.prototype = Object.create(Node.prototype);
 LayoutController.prototype.constructor = LayoutController;
 
 function _layout() {
-	if (this.options.layout && this.dataSource) {
-		this.options.layout(this.dataSource, this.getSize(), this.options.layoutOptions);
+	if (this.layout && this.dataSource) {
+		this.layout(this.dataSource, this.getSize(), this.options.layoutOptions);
 	}
 }
 
@@ -50,9 +46,8 @@ LayoutController.prototype.reflowLayout = function() {
 };
 
 LayoutController.prototype.setOptions = function(options) {
-	if ((options.layout !== undefined) && (options.layout !== this.options.layout)) {
-		this.options.layout = options.layout;
-		this.reflowLayout();
+	if (options.layout !== undefined) {
+		this.setLayout(options.layout);
 	}
 	if (options.layoutOptions) {
 		this.options.layoutOptions = options.layoutOptions;

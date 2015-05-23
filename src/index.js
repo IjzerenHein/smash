@@ -4,7 +4,8 @@
 var DOMElement = require('famous/dom-renderables/DOMElement');
 var FamousEngine = require('famous/core/FamousEngine');
 //var HeaderFooterView = require('./HeaderFooterView');
-var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
+//var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
+var ProportionalLayout = require('./layouts/ProportionalLayout');
 var LayoutController = require('./LayoutController');
 
 // Boilerplate code to make your life easier
@@ -12,6 +13,24 @@ FamousEngine.init();
 
 // Initialize with a scene; then, add a 'node' to the scene root
 var scene = FamousEngine.createScene();
+
+var nodes = LayoutController.createDataSource([]);
+new DOMElement(nodes.push()).setProperty('background', 'yellow');
+new DOMElement(nodes.push()).setProperty('background', 'green');
+new DOMElement(nodes.push()).setProperty('background', 'blue');
+new DOMElement(nodes.push()).setProperty('background', 'red');
+new DOMElement(nodes.push()).setProperty('background', 'orange');
+//new DOMElement(nodes.push()).setProperty('background', 'purple');
+
+var lc = new LayoutController({
+    layout: ProportionalLayout,
+    layoutOptions: {
+        ratios: [1, 2, 3, 4, 1.5],
+        direction: 1
+    },
+    dataSource: nodes
+});
+scene.addChild(lc);
 
 /*var hf = new HeaderFooterLayout();
 scene.addChild(hf);
@@ -21,7 +40,7 @@ var footerEl = new DOMElement(hf.footer)
     .setProperty('background', 'blue');
 var logoNode = hf.content.addChild();*/
 
-var nodes = LayoutController.createDataSource({});
+/*var nodes = LayoutController.createDataSource({});
 new DOMElement(nodes.set('header'))
     .setProperty('background', 'blue');
 new DOMElement(nodes.set('footer'))
@@ -37,6 +56,7 @@ var lc = new LayoutController({
     dataSource: nodes
 });
 scene.addChild(lc);
+*/
 
 /*var nodes = {
     header: scene.addChild(),
@@ -60,7 +80,7 @@ scene.addComponent({
 
 
 // Create an [image] DOM element providing the logo 'node' with the 'src' path
-new DOMElement(logoNode, { tagName: 'img' })
+/*new DOMElement(logoNode, { tagName: 'img' })
     .setAttribute('src', './images/famous_logo.png');
 
 // Chainable API
@@ -85,3 +105,4 @@ var spinner = logoNode.addComponent({
 
 // Let the magic begin...
 logoNode.requestUpdate(spinner);
+*/

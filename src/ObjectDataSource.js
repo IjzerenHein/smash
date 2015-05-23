@@ -41,6 +41,10 @@ ObjectDataSource.prototype.set = function(id, node) {
 	return this[id];
 };
 
+ObjectDataSource.prototype.get = function(id) {
+	return this[id];
+};
+
 ObjectDataSource.prototype.remove = function(id) {
 	var node = this[id];
 	delete this[id];
