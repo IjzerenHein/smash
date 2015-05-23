@@ -1,2 +1,5 @@
 # smash
-Something new
+
+Nothing to be seen here, go away
+
+![Screenshot](screenshot.png)
