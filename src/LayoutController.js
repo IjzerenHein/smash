@@ -11,6 +11,7 @@
 var Node = require('famous/core/Node');
 var ObjectDataSource = require('./ObjectDataSource');
 var ArrayDataSource = require('./ArrayDataSource');
+var LayoutNode = require('./LayoutNode');
 
 /**
  * LayoutController
@@ -21,6 +22,14 @@ var ArrayDataSource = require('./ArrayDataSource');
 function LayoutController(options) {
 	Node.call(this);
 
+	this._nodes = {}; // all nodes
+	this._data = {
+		source: undefined,
+		nodes: {}, // nodes that are in the dataSource
+		insertOffFn: undefined,
+		removeOffFn: undefined
+	};
+
 	this._comp = this.addComponent({
 		onUpdate: _layout.bind(this),
 		onSizeChange: _layout.bind(this)
@@ -30,12 +39,6 @@ function LayoutController(options) {
 }
 LayoutController.prototype = Object.create(Node.prototype);
 LayoutController.prototype.constructor = LayoutController;
-
-function _layout() {
-	if (this.layout && this.dataSource) {
-		this.layout(this.dataSource, this.getSize(), this.options.layoutOptions);
-	}
-}
 
 LayoutController.createDataSource = function(data) {
 	return Array.isArray(data) ? new ArrayDataSource(data) : new ObjectDataSource(data);
@@ -70,29 +73,83 @@ LayoutController.prototype.getLayout = function() {
 };
 
 LayoutController.prototype.setDataSource = function(dataSource) {
-	if (this._dataSourceInsert) {
-		this._dataSourceInsert();
-		this._dataSourceInsert = undefined;
+	if (this._data.source === dataSource) {
+		return;
 	}
-	if (this._dataSourceRemove) {
-		this._dataSourceRemove();
-		this._dataSourceRemove = undefined;
+	if (this._data.insertOffFn) {
+		this._data.insertOffFn();
+		this._data.insertOffFn = undefined;
 	}
-	this.dataSource = dataSource;
-	if (this.dataSource) {
-		this._dataSourceInsert = this.dataSource.on('insert', function(node) {
-			this.addChild(node);
-			this.reflowLayout();
+	if (this._data.removeOffFn) {
+		this._data.removeOffFn();
+		this._data.removeOffFn = undefined;
+	}
+	this._data.source = dataSource;
+	this.data = this._data.source;
+	for (id in this._data.nodes) {
+		this._data.nodes[id].inDataSource = false;
+	}
+	if (this._data.source) {
+		this._data.insertOffFn = this._data.source.on('insert', _insert.bind(this));
+		this._data.removeOffFn = this._data.source.on('remove', _remove.bind(this));
+		this._data.source.forEach(function(node, id) {
+			this._nodes[id] = this._nodes[id] || new LayoutNode();
+			this._nodes[id].setNode(node);
+			this._nodes[id].inDataSource = true;
+			this._data.nodes[id] = this._nodes[id];
 		}.bind(this));
-		this._dataSourceRemove = this.dataSource.on('remove', function(node) {
-			this.removeChild(node);
-			this.reflowLayout();
-		}.bind(this));
-		this.dataSource.forEach(function(node) {
-			this.addChild(node);
-		}.bind(this));
+	}
+	var id;
+	for (id in this._data.nodes) {
+		if (!this._data.nodes[id].inDataSource) {
+			delete this._data.nodes[id];
+		}
 	}
 	this.reflowLayout();
 };
+
+LayoutController.prototype.getDataSource = function() {
+	return this._data.source;
+};
+
+function _layout() {
+	var id;
+	var node;
+	for (id in this._nodes) {
+		this._nodes[id].reset(true);
+	}
+	if (this.layout) {
+		this.layout(this._data.nodes, this.getSize(), this.options.layoutOptions);
+	}
+	for (id in this._nodes) {
+		node = this._nodes[id];
+		node.reset(false);
+		if (!node.inLayout && node.inSceneGraph) {
+			this.removeChild(node.node);
+			if (!node.inDataSource) {
+				delete this._nodes[id];
+				delete this._data.nodes[id];
+			}
+		}
+		else if (node.inLayout && !node.inSceneGraph) {
+			node.inSceneGraph = true;
+			this.addChild(node.node);
+		}
+	}
+}
+
+function _insert(id) {
+	this._nodes[id] = this._nodes[id] || new LayoutNode();
+	this._nodes[id].setNode(this._data.source.get(id));
+	this._nodes[id].inDataSource = true;
+	this._data.nodes[id] = this._nodes[id];
+	this.reflowLayout();
+}
+
+function _remove(id) {
+	this._nodes[id].inDataSource = false;
+	delete this._data.nodes[id];
+	this.reflowLayout();
+}
 
 module.exports = LayoutController;

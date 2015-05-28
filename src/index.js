@@ -4,9 +4,13 @@
 var DOMElement = require('famous/dom-renderables/DOMElement');
 var FamousEngine = require('famous/core/FamousEngine');
 //var HeaderFooterView = require('./HeaderFooterView');
-//var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
-var ProportionalLayout = require('./layouts/ProportionalLayout');
+var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
+//var ProportionalLayout = require('./layouts/ProportionalLayout');
 var LayoutController = require('./LayoutController');
+var GestureHandler = require('famous/components/GestureHandler');
+var AutoLayout = require('./AutoLayout');
+
+var autoLayout = new AutoLayout();
 
 // Boilerplate code to make your life easier
 FamousEngine.init();
@@ -14,7 +18,7 @@ FamousEngine.init();
 // Initialize with a scene; then, add a 'node' to the scene root
 var scene = FamousEngine.createScene();
 
-var nodes = LayoutController.createDataSource([]);
+/*var nodes = LayoutController.createDataSource([]);
 new DOMElement(nodes.push()).setProperty('background', 'yellow');
 new DOMElement(nodes.push()).setProperty('background', 'green');
 new DOMElement(nodes.push()).setProperty('background', 'blue');
@@ -30,7 +34,7 @@ var lc = new LayoutController({
     },
     dataSource: nodes
 });
-scene.addChild(lc);
+scene.addChild(lc);*/
 
 /*var hf = new HeaderFooterLayout();
 scene.addChild(hf);
@@ -40,7 +44,7 @@ var footerEl = new DOMElement(hf.footer)
     .setProperty('background', 'blue');
 var logoNode = hf.content.addChild();*/
 
-/*var nodes = LayoutController.createDataSource({});
+var nodes = LayoutController.createDataSource({});
 new DOMElement(nodes.set('header'))
     .setProperty('background', 'blue');
 new DOMElement(nodes.set('footer'))
@@ -56,7 +60,12 @@ var lc = new LayoutController({
     dataSource: nodes
 });
 scene.addChild(lc);
-*/
+
+var gesture = new GestureHandler(logoNode);
+gesture.on('tap', function() {
+    nodes.remove('footer');
+});
+
 
 /*var nodes = {
     header: scene.addChild(),
@@ -80,7 +89,7 @@ scene.addComponent({
 
 
 // Create an [image] DOM element providing the logo 'node' with the 'src' path
-/*new DOMElement(logoNode, { tagName: 'img' })
+new DOMElement(logoNode, { tagName: 'img' })
     .setAttribute('src', './images/famous_logo.png');
 
 // Chainable API
@@ -105,4 +114,3 @@ var spinner = logoNode.addComponent({
 
 // Let the magic begin...
 logoNode.requestUpdate(spinner);
-*/

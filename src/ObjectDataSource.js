@@ -31,12 +31,12 @@ ObjectDataSource.prototype.constructor = ObjectDataSource;
 ObjectDataSource.prototype.set = function(id, node) {
 	if (!this[id]) {
 		this[id] = node || new Node();
-		this.trigger('insert', this[id]);
+		this.trigger('insert', id);
 	}
 	else if (!node || (node !== this[id])) {
-		this.trigger('remove', this[id]);
+		this.trigger('remove', id);
 		this[id] = node;
-		this.trigger('insert', this[id]);
+		this.trigger('insert', id);
 	}
 	return this[id];
 };
@@ -46,23 +46,26 @@ ObjectDataSource.prototype.get = function(id) {
 };
 
 ObjectDataSource.prototype.remove = function(id) {
-	var node = this[id];
-	delete this[id];
-	this.trigger('remove', node);
-	return node;
+	if (this[id]) {
+		var node = this[id];
+		delete this[id];
+		this.trigger('remove', id);
+		return node;
+	}
 };
 
 ObjectDataSource.prototype.removeAll = function() {
 	for (var id in this) {
-		var node = this[id];
-		this.trigger('remove', node);
+		this.trigger('remove', id);
 		delete this[id];
 	}
 };
 
 ObjectDataSource.prototype.forEach = function(callback) {
 	for (var id in this) {
-		callback(this[id]);
+		if (this.hasOwnProperty(id) && (id !== '_events')) {
+			callback(this[id], id);
+		}
 	}
 };
 

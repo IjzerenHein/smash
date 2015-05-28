@@ -12,12 +12,14 @@ function HeaderFooterLayout(nodes, size, options) {
         .setSizeMode('relative', 'absolute')
         .setAbsoluteSize(0, options.headerSize);
     nodes.content
-        .setDifferentialSize(0, -(options.headerSize + options.footerSize))
+        .setDifferentialSize(0, -(options.headerSize + (nodes.footer ? options.footerSize : 0)))
         .setPosition(0, options.headerSize, 0);
-    nodes.footer
-        .setSizeMode('relative', 'absolute')
-        .setAbsoluteSize(0, options.footerSize)
-        .setPosition(0, size[1] - options.footerSize, 0);
+    if (nodes.footer) {
+        nodes.footer
+            .setSizeMode('relative', 'absolute')
+            .setAbsoluteSize(0, options.footerSize)
+            .setPosition(0, size[1] - options.footerSize, 0);
+    }
 }
 
 module.exports = HeaderFooterLayout;
