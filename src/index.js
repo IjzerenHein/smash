@@ -11,6 +11,7 @@ var GestureHandler = require('famous/components/GestureHandler');
 var AutoLayout = require('./AutoLayout');
 
 var autoLayout = new AutoLayout();
+var AutoLayoutFn = require('./AutoLayoutFn');
 
 // Boilerplate code to make your life easier
 FamousEngine.init();
@@ -52,7 +53,7 @@ new DOMElement(nodes.set('footer'))
 var logoNode = nodes.set('content').addChild();
 
 var lc = new LayoutController({
-    layout: HeaderFooterLayout,
+    layout: AutoLayoutFn,
     layoutOptions: {
         headerSize: 50,
         footerSize: 50

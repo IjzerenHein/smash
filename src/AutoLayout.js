@@ -16,7 +16,7 @@ var c = require('cassowary/bin/c');
  * AutoLayout
  */
 function AutoLayout(options) {
-	_parse('|[background]|');
+	_parse('|-5-[background]|');
 	_parse('V:|[background]|');
 	_parse('|-[background]-|');
 	_parse('|-50-[background]-|');
@@ -25,7 +25,7 @@ function AutoLayout(options) {
 	_parse('[button(==button2)]');
 	_parse('[button(==button2,==button3)]');
 
-	/*var solver = new c.SimplexSolver();
+	var solver = new c.SimplexSolver();
 	var x = new c.Variable({ value: 167 });
 	var y = new c.Variable({ value: 200 });
 	var eq = new c.Equation(x, new c.Expression(y));
@@ -34,7 +34,7 @@ function AutoLayout(options) {
 	solver.suggestValue(y, 100);
 	solver.resolve();
 	var val = x.value;
-	console.log('val: ' + val);*/
+	console.log('val: ' + val);
 
 	/*var solver = new c.SimplexSolver();
 
@@ -63,7 +63,7 @@ function AutoLayout(options) {
 	var starksRemaining = stark.value;
 	console.log('starksRemaining: ' + starksRemaining);*/
 
-	var zero = new c.Variable({value: 0});
+	/*var zero = new c.Variable({value: 0});
 	var width = new c.Variable({value: 100});
 	var height = new c.Variable({value: 100});
 	var solver = new c.SimplexSolver();
@@ -89,7 +89,7 @@ function AutoLayout(options) {
 	solver.addConstraint(new c.Equation(child.bottom, height));
 
 	solver.resolve();
-	console.log('child: ' + JSON.stringify(child, undefined, 2));
+	console.log('child: ' + JSON.stringify(child, undefined, 2));*/
 
 }
 
