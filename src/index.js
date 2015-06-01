@@ -4,13 +4,13 @@
 var DOMElement = require('famous/dom-renderables/DOMElement');
 var FamousEngine = require('famous/core/FamousEngine');
 //var HeaderFooterView = require('./HeaderFooterView');
-var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
+//var HeaderFooterLayout = require('./layouts/HeaderFooterLayout');
 //var ProportionalLayout = require('./layouts/ProportionalLayout');
 var LayoutController = require('./LayoutController');
 var GestureHandler = require('famous/components/GestureHandler');
 var AutoLayout = require('./AutoLayout');
 
-var autoLayout = new AutoLayout();
+//var autoLayout = new AutoLayout();
 var AutoLayoutFn = require('./AutoLayoutFn');
 
 // Boilerplate code to make your life easier
