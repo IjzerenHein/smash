@@ -8,12 +8,11 @@
  * @copyright Hein Rutjes, 2015
  */
 
-var AutoLayout = require('./AutoLayoutJS');
+var AutoLayout = require('./AutoLayout');
 
 var al = new AutoLayout();
 al.addVisualFormat('V:|[header(50)][content][footer(50)]|');
-al.addVisualFormat('|-60-[header]-|');
-//al.addVisualFormat('');
+al.addVisualFormat('|-(100)-[header]-(100)-|');
 
 module.exports = function(nodes, size, options) {
 	al.setParentSize(size[0], size[1]);

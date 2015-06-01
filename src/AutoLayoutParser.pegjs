@@ -37,15 +37,15 @@ view
 
 connection
   = "-" predicateList:predicateList "-" { return predicateList }
-  / "-" { return [{ relation: 'equal', constant: 'default', $parserOffset: offset() }] }
-  / "" { return [{ relation: 'equal', constant: 0, $parserOffset: offset() }] }
+  / "-" { return [{ relation: 'equ', constant: 'default', $parserOffset: offset() }] }
+  / "" { return [{ relation: 'equ', constant: 0, $parserOffset: offset() }] }
 
 predicateList
   = simplePredicate
   / predicateListWithParens
 
 simplePredicate
-  = n:number { return [{ relation: 'equal', constant: n, $parserOffset: offset() }] }
+  = n:number { return [{ relation: 'equ', constant: n, $parserOffset: offset() }] }
 
 predicateListWithParens
   = "(" p:predicate ps:("," predicate)* ")"
@@ -53,12 +53,12 @@ predicateListWithParens
 
 predicate
   = r:relation? o:objectOfPredicate p:("@" priority)?
-  { return extend({ relation: 'equal' }, (r || {}), o, (p ? p[1]: {})) }
+  { return extend({ relation: 'equ' }, (r || {}), o, (p ? p[1]: {})) }
 
 relation
-  = "==" { return { relation: 'equal', $parserOffset: offset() } }
-  / "<=" { return { relation: 'lessOrEqual', $parserOffset: offset() } }
-  / ">=" { return { relation: 'greaterOrEqual', $parserOffset: offset() } }
+  = "==" { return { relation: 'equ', $parserOffset: offset() } }
+  / "<=" { return { relation: 'leq', $parserOffset: offset() } }
+  / ">=" { return { relation: 'geq', $parserOffset: offset() } }
 
 objectOfPredicate
   = constant

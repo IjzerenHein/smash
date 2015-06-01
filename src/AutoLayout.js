@@ -8,97 +8,291 @@
  * @copyright Hein Rutjes, 2015
  */
 
-//var Node = require('famous/core/Node');
 var AutoLayoutParser = require('./AutoLayoutParser');
 var c = require('cassowary/bin/c');
+
+/*
+ * Relation types.
+ * @enum {Number}
+ */
+var Relation = {
+	LEQ: 'leq', // less than or equal
+	EQU: 'equ', // equal
+	GEQ: 'geq'  // greater than or equal
+};
+
+/*
+ * Attribute types.
+ * @enum {String}
+ */
+var Attribute = {
+	CONST: 'const',
+	LEFT: 'left',
+	RIGHT: 'right',
+	TOP: 'top',
+	BOTTOM: 'bottom',
+	WIDTH: 'width',
+	HEIGHT: 'height',
+	CENTERX: 'centerX',
+	CENTERY: 'centerY'
+	/*LEADING: 'leading',
+	TRAILING: 'trailing'*/
+};
 
 /**
  * AutoLayout
  */
-function AutoLayout(options) {
-	_parse('|-5-[background]|');
-	_parse('V:|[background]|');
-	_parse('|-[background]-|');
-	_parse('|-50-[background]-|');
-	_parse('[background]-70-[background2]');
-	_parse('[button(>=50)]');
-	_parse('[button(==button2)]');
-	_parse('[button(==button2,==button3)]');
+function AutoLayout() {
+	this.solver = new c.SimplexSolver();
+	this.views = {};
+	this.constraints = [];
+}
+AutoLayout.Relation = Relation;
+AutoLayout.Attribute = Attribute;
 
-	var solver = new c.SimplexSolver();
-	var x = new c.Variable({ value: 167 });
-	var y = new c.Variable({ value: 200 });
-	var eq = new c.Equation(x, new c.Expression(y));
-	solver.addConstraint(eq);
-	solver.addEditVar(y);
-	solver.suggestValue(y, 100);
-	solver.resolve();
-	var val = x.value;
-	console.log('val: ' + val);
+function _getConst(name, value) {
+	var vr = new c.Variable({value: value});
+	this.solver.addConstraint(new c.StayConstraint(vr, c.Strength.required, 0));
+	return vr;
+}
 
-	/*var solver = new c.SimplexSolver();
-
-	// Declare variables
-	var stark = new c.Variable({ value: 4 }),
-	    lannister = new c.Variable({ value: 6 }),
-	    tully = new c.Variable({ value: 2 }),
-	    frey = new c.Variable({ value: 3 });
-
-	// Declare expressions
-	var goodies = c.plus(stark, tully),
-	    baddies = c.plus(lannister, frey);
-
-	// Declare constraints
-	var wedding = new c.Inequality(baddies, c.GEQ, goodies);
-
-	// Add constraints to the solver
-	solver.add(wedding);
-
-	// Suggest values and resolve
-	solver.addEditVar(stark);
-	solver.suggestValue(stark, 100);
-	solver.resolve();
-
-	// Get a resolved value
-	var starksRemaining = stark.value;
-	console.log('starksRemaining: ' + starksRemaining);*/
-
-	/*var zero = new c.Variable({value: 0});
-	var width = new c.Variable({value: 100});
-	var height = new c.Variable({value: 100});
-	var solver = new c.SimplexSolver();
-	solver.addConstraint(new c.StayConstraint(zero, c.Strength.required, 0));
-	solver.addConstraint(new c.StayConstraint(width, c.Strength.required, 0));
-	solver.addConstraint(new c.StayConstraint(height, c.Strength.required, 0));
-
-	var child = {
-		left: new c.Variable(),
-		top: new c.Variable(),
-		width: new c.Variable(),
-		height: new c.Variable(),
-		right: new c.Variable(),
-		bottom: new c.Variable()
+/**
+ * Internal helper function for getting/creating a view attribute.
+ */
+function _getAttr(viewName, attr) {
+	this.views[(viewName || '__parentview')] = this.views[(viewName || '__parentview')] || {
+		name: viewName,
+		attr: {}
 	};
-
-	solver.addConstraint(new c.Equation(child.right, c.plus(child.left, child.width)));
-	solver.addConstraint(new c.Equation(child.bottom, c.plus(child.top, child.height)));
-
-	solver.addConstraint(new c.Equation(child.left, 10));
-	solver.addConstraint(new c.Equation(child.top, zero));
-	solver.addConstraint(new c.Equation(child.right, width));
-	solver.addConstraint(new c.Equation(child.bottom, height));
-
-	solver.resolve();
-	console.log('child: ' + JSON.stringify(child, undefined, 2));*/
-
+	var view = this.views[(viewName || '__parentview')];
+	if (!view.attr[attr]) {
+		switch (attr) {
+			case Attribute.LEFT:
+			case Attribute.TOP:
+			case Attribute.WIDTH:
+			case Attribute.HEIGHT:
+				view.attr[attr] = new c.Variable({value: 0});
+				if (!view.name) {
+					if ((attr === Attribute.WIDTH) || (attr === Attribute.HEIGHT)) {
+						this.solver.addEditVar(view.attr[attr]);
+					}
+					else {
+						this.solver.addConstraint(new c.StayConstraint(view.attr[attr], c.Strength.required, 0));
+					}
+				}
+				break;
+			case Attribute.RIGHT:
+				_getAttr.call(this, viewName, Attribute.LEFT);
+				_getAttr.call(this, viewName, Attribute.WIDTH);
+				view.attr[Attribute.RIGHT] = new c.Variable();
+				this.solver.addConstraint(new c.Equation(view.attr[Attribute.RIGHT], c.plus(view.attr[Attribute.LEFT], view.attr[Attribute.WIDTH])));
+				break;
+			case Attribute.BOTTOM:
+				_getAttr.call(this, viewName, Attribute.TOP);
+				_getAttr.call(this, viewName, Attribute.HEIGHT);
+				view.attr[Attribute.BOTTOM] = new c.Variable();
+				this.solver.addConstraint(new c.Equation(view.attr[Attribute.BOTTOM], c.plus(view.attr[Attribute.TOP], view.attr[Attribute.HEIGHT])));
+				break;
+			case Attribute.CENTERX:
+				_getAttr.call(this, viewName, Attribute.LEFT);
+				_getAttr.call(this, viewName, Attribute.WIDTH);
+				view.attr[Attribute.CENTERX] = new c.Variable();
+				this.solver.addConstraint(new c.Equation(view.attr[Attribute.CENTERX], c.plus(view.attr[Attribute.LEFT], c.divide(view.attr[Attribute.WIDTH], 2))));
+				break;
+			case Attribute.CENTERY:
+				_getAttr.call(this, viewName, Attribute.TOP);
+				_getAttr.call(this, viewName, Attribute.HEIGHT);
+				view.attr[Attribute.CENTERY] = new c.Variable();
+				this.solver.addConstraint(new c.Equation(view.attr[Attribute.CENTERY], c.plus(view.attr[Attribute.TOP], c.divide(view.attr[Attribute.HEIGHT], 2))));
+				break;
+		}
+	}
+	return view.attr[attr];
 }
 
-function _parse(visualFormat) {
-	var res = AutoLayoutParser.parse(visualFormat);
-	console.log('--------------------');
-	console.log('visualFormat: ' + visualFormat);
-	console.log('result: ');
-	console.log(JSON.stringify(res, null, 2));
+/**
+ * Sets the width and height of the parent view.
+ *
+ * @param {Number} width Width of the parent view.
+ * @param {Number} height Height of the parent view.
+ * @return {AutoLayout} this
+ */
+AutoLayout.prototype.setParentSize = function(width, height) {
+	if ((this._parentWidth === width) &&
+		(this._parentHeight === height)) {
+		return;
+	}
+	if ((width !== undefined) && (this._parentWidth !== width)) {
+		this._parentWidth = width;
+		this.solver.suggestValue(_getAttr.call(this, undefined, Attribute.WIDTH), this._parentWidth);
+	}
+	if ((height !== undefined) && (this._parentHeight !== height)) {
+		this._parentHeight = height;
+		this.solver.suggestValue(_getAttr.call(this, undefined, Attribute.HEIGHT), this._parentHeight);
+	}
+	this.solver.resolve();
+};
+
+/*
+AutoLayout.prototype.suggestValue = function(view, attr, value) {
+	switch (attr) {
+		case Attribute.LEFT:
+		case Attribute.TOP:
+		case Attribute.WIDTH:
+		case Attribute.HEIGHT:
+			attr = _getAttr.call(this, view, attr);
+			break;
+		default:
+			throw 'Invalid atribute specified: ' + attr + ', only the following attributes can be suggested: LEFT, TOP, WIDTH & HEIGHT';
+	}
+	attr.suggestValue(attr, value);
+};*/
+
+/**
+ * Internal helper function that adds a constraint to the solver.
+ */
+function _addConstraint(constraint) {
+	this.constraints.push(constraint);
+	var attr1 = _getAttr.call(this, constraint.view1, constraint.attr1);
+	var attr2 = (constraint.attr2 === Attribute.CONST) ? _getConst.call(this, undefined, constraint.constant) : _getAttr.call(this, constraint.view2, constraint.attr2);
+	var relation;
+	switch (constraint.relation) {
+		case Relation.LEQ:
+			//relation = new c.Inequality(attr1, c.LEQ, c.plus(attr2, )
+			break;
+		case Relation.EQU:
+			if (((constraint.multiplier === 1) && !constraint.constant) || (constraint.attr2 === Attribute.CONST)) {
+				relation = new c.Equation(attr1, attr2);
+			}
+			else if ((constraint.multiplier !== 1) && constraint.constant) {
+				throw 'todo';
+			}
+			else if (constraint.constant) {
+				relation = new c.Equation(attr2, c.plus(attr1, constraint.constant));
+			}
+			else {
+				throw 'todo';
+			}
+			break;
+		case Relation.GEQ:
+			break;
+		default:
+			throw 'Invalid relation specified: ' + constraint.relation;
+	}
+	this.solver.addConstraint(relation);
 }
+
+/**
+ * Adds one or more constraint definitions.
+ *
+ * A constraint definition has the following format:
+ *
+ * ```javascript
+ * constraint: {
+ *   view1: {String},
+ *   attr1: {AutoLayout.Attribute},
+ *   relation: {AutoLayout.Relation},
+ *   view2: {String},
+ *   attr2: {AutoLayout.Attribute},
+ *   multiplier: {Number},
+ *   constant: {Number}
+ * }
+ * ```
+ * @param {Object|Array} constraints Constraint definition or array of constraint definitions.
+ * @return {AutoLayout} this
+ */
+AutoLayout.prototype.addConstraints = function(constraints) {
+	if (Array.isArray(constraints)) {
+		for (var i = 0; i < constraints.length; i++) {
+			_addConstraint.call(this, constraints[i]);
+		}
+	}
+	else {
+		_addConstraint.call(this, constraints);
+	}
+	return this;
+};
+
+/**
+ * Adds one or more constraints from a visual-format definition.
+ * See `AutoLayout.constraintsFromVisualFormat`.
+ *
+ * @param {String|Array} visualFormat Visual format string or array of vfl strings.
+ * @return {Array} this
+ */
+AutoLayout.prototype.addVisualFormat = function(visualFormat) {
+	return this.addConstraints(AutoLayout.constraintsFromVisualFormat(visualFormat));
+};
+
+/**
+ * Parses one or more visual format strings into an array of constraint definitions.
+ *
+ * TODO
+ *
+ * @param {String|Array} visualFormat Visual format string or array of vfl strings.
+ * @return {AutoLayout} array of constraint definitions
+ */
+AutoLayout.constraintsFromVisualFormat = function(visualFormat) {
+	visualFormat = Array.isArray(visualFormat) ? visualFormat : [visualFormat];
+	var view1;
+	var view2;
+	var relation;
+	var attr1;
+	var attr2;
+	var item;
+	var horizontal;
+	var constraints = [];
+	var res;
+	for (var j = 0; j < visualFormat.length; j++) {
+		res = AutoLayoutParser.parse(visualFormat[j]);
+		horizontal = (res.orientation === 'horizontal');
+		for (var i = 0; i < res.cascade.length; i++) {
+			item = res.cascade[i];
+			if (!Array.isArray(item) && item.hasOwnProperty('view')) {
+				view1 = view2;
+				view2 = item.view;
+				if ((view1 !== undefined) && (view2 !== undefined) && relation) {
+					attr1 = horizontal ? Attribute.RIGHT : Attribute.BOTTOM;
+					attr2 = horizontal ? Attribute.LEFT : Attribute.TOP;
+					if (!view1) {
+						attr1 = horizontal ? Attribute.LEFT : Attribute.TOP;
+					}
+					if (!view2) {
+						attr2 = horizontal ? Attribute.RIGHT : Attribute.BOTTOM;
+					}
+					constraints.push({
+						view1: view1,
+						attr1: attr1,
+						relation: relation.relation,
+						view2: view2,
+						attr2: attr2,
+						multiplier: 1,
+						constant: relation.constant
+					});
+				}
+				relation = undefined;
+
+				// process view size constraints
+				if (item.constraints) {
+					for (var n = 0; n < item.constraints.length; n++) {
+						constraints.push({
+							view1: item.view,
+							attr1: horizontal ? Attribute.WIDTH : Attribute.HEIGHT,
+							relation: item.constraints[n].relation,
+							view2: undefined,
+							attr2: Attribute.CONST,
+							multiplier: 1,
+							constant: item.constraints[n].constant
+						});
+					}
+				}
+			}
+			else {
+				relation = item[0];
+			}
+		}
+	}
+	return constraints;
+};
 
 module.exports = AutoLayout;
